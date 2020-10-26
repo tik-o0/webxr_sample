@@ -4,18 +4,19 @@
 import * as THREE from './lib/three.module.js';
 import { OrbitControls } from './lib/OrbitControls.js';
 import { VRButton } from './lib/VRButton.js';
- 
+
 //===============================================================
 // Main
 //===============================================================
 window.addEventListener('load',function(){
-   init();
+    init();
 });
- 
+
 let scene,camera,renderer;
- 
+let texture;
+let orbitControls;
+
 function init(){
-    //シーン、カメラ、レンダラーを生成
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(90,window.innerWidth/window.innerHeight,0.1,1000);
     camera.position.set(0,1.6,3);
@@ -23,45 +24,92 @@ function init(){
     renderer = new THREE.WebGLRenderer({antialias:true});
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth,window.innerHeight);
- 
-    //canvasを作成
-    const container = document.createElement('div');
-    document.body.appendChild(container);
+
+    const container = document.querySelector('#canvas_vr');
     container.appendChild(renderer.domElement);
- 
-    //球体の形状を生成
+
+    document.body.appendChild(VRButton.createButton(renderer));
+
+    window.addEventListener('resize',function(){
+        camera.aspect = window.innerWidth/window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth,window.innerHeight);
+    },false);
+
+    checkDevice();
+    setLoading();
+}
+
+function checkDevice(){
+    if ('xr' in navigator) {
+        navigator.xr.isSessionSupported('immersive-vr').then(function(supported){
+            if(supported){
+                renderer.xr.enabled = true;
+            }else{
+                setController();
+            }
+        });
+    } else {
+        setController();
+    }
+}
+
+function setLoading(){
+    TweenMax.to('.loader',0.1,{opacity:1});
+
+    const manifest = [
+        {id:'pict01',src:'./img/pict.jpg'}
+    ];
+    const loadQueue = new createjs.LoadQueue();
+
+    loadQueue.on('progress',function(e){
+        const progress = e.progress;
+    });
+
+    loadQueue.on('complete',function(){
+        const image = loadQueue.getResult('pict01');
+        texture = new THREE.Texture(image);
+        texture.needsUpdate = true;
+
+        TweenMax.to('#loader_wrapper',1,{
+            opacity:0,
+            onComplete:function(){
+                document.getElementById('loader_wrapper').style.display ='none';
+            }
+        });
+        threeWorld();
+        rendering();
+    });
+
+    loadQueue.loadManifest(manifest);
+}
+
+function threeWorld(){
     const geometry = new THREE.SphereGeometry(100,100,100);
     geometry.scale(-1,1,1);
- 
-    //テクスチャ画像を読み込み
-    const loader = new THREE.TextureLoader();
-    const texture = loader.load('./img/pict.jpg');
- 
-    //球体のマテリアルを生成
     const material = new THREE.MeshBasicMaterial({
         map:texture
     });
- 
-    //球体を生成
-    const sphere = new THREE.Mesh(geometry, material);
+    const sphere = new THREE.Mesh(geometry,material);
     scene.add(sphere);
- 
-    //OrbitControlsを初期化
-    const orbitControls = new OrbitControls(camera,renderer.domElement);
- 
-    render();
-}
- 
-function render(){
-    requestAnimationFrame(animate);
-}
- 
-function animate(){
-    renderer.render(scene,camera);
 }
 
-window.addEventListener('resize',function(){
-    camera.aspect = window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth,window.innerHeight);
-},false);
+function setController(){
+    document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});
+    orbitControls = new OrbitControls(camera,renderer.domElement);
+    orbitControls.target.set(0,1.6,0);
+    orbitControls.enableDamping = true;
+    orbitControls.dampingFactor = 0.5;
+    orbitControls.enableZoom = false;
+}
+
+function rendering(){
+    renderer.setAnimationLoop(animate);
+}
+
+function animate(){
+    if(orbitControls){
+        orbitControls.update();
+    }
+    renderer.render(scene,camera);
+}
