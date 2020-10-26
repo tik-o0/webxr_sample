@@ -6,18 +6,7 @@
 </head>
 
 <body>
-  <script>
-(async() => {
-const immersiveOK = await navigator.xr.isSessionSupported("immersive-vr");
-if (immersiveOK) {
-  // 没入型 VR セッションを作成して使用する
-  confirm('ok');
-} else {
-  // 代わりにインラインセッションを作成するか、
-  // インラインが必要な場合は非互換性についてユーザーに伝えます
-  confirm('ng');
-}
-})();
-</script>
+<div id="canvas_vr"></div>
+<script src="js/script.js" type="module"></script>
 </body>
 </html>
