@@ -7,6 +7,7 @@
 
 <body>
   <script>
+(async() => {
 const immersiveOK = await navigator.xr.isSessionSupported("immersive-vr");
 if (immersiveOK) {
   // 没入型 VR セッションを作成して使用する
@@ -16,6 +17,7 @@ if (immersiveOK) {
   // インラインが必要な場合は非互換性についてユーザーに伝えます
   confirm('ng');
 }
+})();
 </script>
 </body>
 </html>
